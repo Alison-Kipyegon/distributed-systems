@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: stock-api
+  namespace: widgetario
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: stock-api
+  template:
+    metadata:
+      labels:
+        app: stock-api
+      annotations:
+        prometheus.io/scrape:"true"
+        prometheus.io/path: "/actuator/prometheus"
+        prometheus.io/port:"80"
+    spec:
+      volumes:
+      - name: cache
+        emptyDir: {}
+
+      containers:
+      - name: stock-api
+        image: widgetario/stock-api:21.03
+        ports:
+        - containerPort: 8090
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        env:
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: products-db-secret
+              key: POSTGRES_PASSWORD
+        - name: DATABASE_HOST
+          value: products-db-1.products-db.widgetario.svc.cluster.local
+        volumeMounts:
+        - mountPath: /cache
+          name: cache
+        resources:  
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+        securityContext:  
+          runAsUser: 1000
+          runAsGroup: 3000
+          runAsNonRoot: true
+          allowPrivilegeEscalation: false
