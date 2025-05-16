@@ -1,0 +1,100 @@
+PART 1
+# Creating the namespace
+kubectl create namespace widgetario
+	
+#Create the yaml and service files
+ notepad products-db.yaml
+ notepad products-api.yaml
+ notepad stock-api.yaml
+ notepad web.yaml
+
+# Applying the yamls
+kubectl apply -f products-db.yaml
+kubectl apply -f products-api.yaml
+kubectl apply -f stock-api.yaml
+kubectl apply -f web.yaml
+
+# Verify that everything is working
+kubectl get pods -n widgetario
+kubectl get svc -n widgetario
+
+PART 2
+
+#create products-db-secret
+notepad products-db-secret.yaml
+
+#Apply the yaml
+kubectl apply -f products-db-secret.yaml
+
+#Restart the deployments
+kubectl rollout restart deploy/products-db -n widgetario
+kubectl rollout restart deploy/products-api -n widgetario
+kubectl rollout restart deploy/stock-api -n widgetario
+kubectl rollout restart deploy/web -n widgetario
+
+
+PART 3
+
+# Edit stock-api.yaml
+ volumes:
+- name: cache
+  emptyDir: {}
+
+containers:
+- name: stock-api
+  ...
+  volumeMounts:
+  - mountPath: /cache
+    name: cache
+
+#Apply it
+kubectl apply -f stock-api.yaml
+
+#Setup StatefulSet
+ notepad products-db-statefulset.yaml
+
+PART 4
+
+#Install ingress controller
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/cloud/deploy.yaml
+
+#Create ingress resource 
+ notepad wigdetario-ingress.yaml
+
+#Apply
+ kubectl apply -f widgetario-ingress.yaml
+
+PART 5
+
+# Apply the updated yamls
+ kubectl apply -f products-api.yaml
+kubectl apply -f stock-api.yaml
+kubectl apply -f web.yaml
+
+# Verify Probes
+kubectl describe pod -n widgetario
+
+PART 6 
+
+#Add monitoring and Logging
+#Install helm manually for Windows
+
+#Add helm repo
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+helm repo update
+
+#Install Prometheus 
+helm install monitoring prometheus-community/kube-prometheus-stack --namespace monitoring --create-namespace
+
+#Access Grafana Dashboard
+kubectl get svc -n monitoring
+
+#Get admin password
+kubectl get secret --namespace monitoring monitoring-grafana -o jsonpath="{.data.admin-password}" > temp.txt
+certutil -decode temp.txt password.txt
+type password.txt
+
+
+
+
+
