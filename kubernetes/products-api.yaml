@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: products-api
+  namespace: widgetario
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: products-api
+  template:
+    metadata:
+      labels:
+        app: products-api
+      annotations:
+        prometheus.io/scrape:"true"
+        prometheus.io/path: "/actuator/prometheus"
+        prometheus.io/port:"80"
+    spec:
+      containers:
+      - name: products-api
+        image: widgetario/products-api:21.03
+        ports:
+        - containerPort: 8080
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        env:
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: products-db-secret
+              key: POSTGRES_PASSWORD
+        - name: DATABASE_HOST
+          value: products-db-0.products-db.widgetario.svc.cluster.local
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+
+        securityContext:
+          runAsUser: 1000
+          runAsGroup: 3000
+          runAsNonRoot: true
+          allowPrivilegeEscalation: false
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: products-api
+  namespace: widgetario
+spec:
+  selector:
+    app: products-api
+  ports:
+  - port: 8080
+    targetPort: 8080
