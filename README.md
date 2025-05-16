@@ -8,10 +8,17 @@ This project demonstrates deploying and managing the **Widgetario** microservice
 - **Elasticsearch + Fluent Bit + Kibana (EFK)** for centralized logging
 
 ## 📁 Repository Structure
-
-
-
----
+distributed-systems/
+├── kubernetes/
+│   products-api.yaml
+|   products-db.yaml
+|   products-db-secret.yaml
+|   products-db-statefulset.yaml
+|   stock-api.yaml
+|   web.yaml
+|   widgetario-ingress.yaml
+|
+├── README.md
 
 ##  Installation & Setup
 
@@ -41,7 +48,24 @@ helm install elasticsearch elastic/elasticsearch --namespace logging --create-na
 helm install kibana elastic/kibana --namespace logging
 
 
-### 
+### 5. Deploy the Widgetario App
+
+kubectl apply -f widgetario/
+
+# Usage Instructions
+### 1. View Grafana Dashboards
+kubectl port-forward svc/monitoring-grafana -n monitoring 30003:80
+
+Username: admin
+
+Password: (run the command below)
+
+kubectl get secret --namespace monitoring monitoring-grafana -o jsonpath="{.data.admin-password}" | powershell -command "[Text.Encoding]::UTF8.GetString([Convert]::FromBase64String((Get-Clipboard)))"
+Import dashboards/grafana-dashboard.json in Grafana.
+
+
+
+
 
 
 
